@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  postgres:
+    restart: on-failure
+    image: postgres:10.6
+    environment:
+      # DATABASE_HOST: $DATABASE_HOST
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
+    ports:
+      - 5432:5432
+    container_name: genetic_postgres
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+  backend: &backend
+    restart: always
+    build: .
+    image: genetic/backend
+    volumes:
+      - .:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+    container_name: genetic_backend
+    environment:
+      - PYTHONUNBUFFERED=1
+    # command: gunicorn genetic.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    entrypoint:
+      - /django-entrypoint-prod.sh
+  backend_dev:
+    <<: *backend
+    command: python manage.py runserver 0.0.0.0:8000
+    container_name: genetic_backend_dev
+    entrypoint:
+      - /django-entrypoint-dev.sh
+
+volumes:
+  postgresdata:
